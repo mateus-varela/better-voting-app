@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: worker
+  name: worker
+  namespace: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: us-central1-docker.pkg.dev/awesome-carver-428900-q8/artifact-laboratorio/ms-worker:latest
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: kafka-bootstrap-server
+            - name: KAFKA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: kafka-username
+            - name: KAFKA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-password
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql
+                  key: db-host
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql
+                  key: db-username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgsql
+                  key: db-password
+      imagePullSecrets:
+        - name: registry-secret
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1 
+      maxUnavailable: 1

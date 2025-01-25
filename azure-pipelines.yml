@@ -1,0 +1,165 @@
+pool:
+  name: Default
+
+
+##### BUILD + PUSH  
+
+stages:
+  - stage: BuildAndPushDockerImages
+    displayName: 'Build and Push Docker Images'
+    jobs:
+      - job: BuildPushVote
+        displayName: Build and Push ms-vote
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: 'gcp-artifact-registry'
+              repository: 'awesome-carver-428900-q8/artifact-laboratorio/ms-vote'
+              command: buildAndPush
+              Dockerfile: 'vote/Dockerfile'
+              buildContext: 'vote'
+              tags: 'latest'
+
+      - job: BuildPushWorker
+        displayName: Build and Push ms-worker
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: 'gcp-artifact-registry'
+              repository: 'awesome-carver-428900-q8/artifact-laboratorio/ms-worker'
+              command: buildAndPush
+              Dockerfile: 'worker/Dockerfile'
+              buildContext: 'worker'
+              tags: 'latest'
+
+      - job: BuildPushResult
+        displayName: Build and Push ms-result
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: 'gcp-artifact-registry'
+              repository: 'awesome-carver-428900-q8/artifact-laboratorio/ms-result'
+              command: buildAndPush
+              Dockerfile: 'result/Dockerfile'
+              buildContext: 'result'
+              tags: 'latest'
+
+####### DEPLOY
+
+  - stage: DeployToKubernetes
+    displayName: 'Deploy Microservices to Kubernetes'
+    jobs:
+      - deployment: DeployVoteV1
+        displayName: Deploy ms-vote V1 to Kubernetes
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    manifests: |
+                      k8s-specifications/vote-v1-deployment.yaml
+                      k8s-specifications/vote-v1-service.yaml
+
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    command: 'rollout'
+                    arguments: 'restart deployment vote-v1 -n voting-app'
+
+      - deployment: DeployVoteV2
+        displayName: Deploy ms-vote V2 to Kubernetes
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    manifests: |
+                      k8s-specifications/vote-v2-deployment.yaml
+                      k8s-specifications/vote-v2-service.yaml
+
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    command: 'rollout'
+                    arguments: 'restart deployment vote-v2 -n voting-app'
+                    
+      - deployment: DeployWorker
+        displayName: Deploy ms-worker to Kubernetes
+        dependsOn: DeployVoteV2
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    manifests: 'k8s-specifications/worker-deployment.yaml'
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    command: 'rollout'
+                    arguments: 'restart deployment worker -n voting-app'
+
+      - deployment: DeployResult
+        displayName: Deploy ms-result to Kubernetes
+        dependsOn: DeployWorker
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    manifests: |
+                      k8s-specifications/result-deployment.yaml
+                      k8s-specifications/result-service.yaml
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Kubernetes Service Connection'
+                    kubernetesServiceEndpoint: 'gcp-k8s-cluster'
+                    namespace: 'voting-app'
+                    command: 'rollout'
+                    arguments: 'restart deployment result -n voting-app'
+
+  - stage: DeployToIstio
+    displayName: 'Deploy Istio Resources'
+    jobs:
+      - deployment: DeployIstioResources
+        displayName: Deploy Istio resources
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'gcp-k8s-cluster'
+                    namespace: 'istio-system'
+                    manifests: |
+                      k8s-specifications/istio-gateway.yaml
+                      k8s-specifications/result-vservice.yaml
+                      k8s-specifications/vote-vservice.yaml
+                      k8s-specifications/dest-rules.yaml

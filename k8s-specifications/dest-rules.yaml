@@ -1,0 +1,47 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: result-destination-rule
+  namespace: istio-system
+spec:
+  host: result-v1.voting-app.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: result-v2-destination-rule
+  namespace: istio-system
+spec:
+  host: result-v2.voting-app.svc.cluster.local
+  subsets:
+  - name: v2
+    labels:
+      version: v2
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: vote-v1-destination-rule
+  namespace: istio-system
+spec:
+  host: vote-v1.voting-app.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: vote-v2-destination-rule
+  namespace: istio-system
+spec:
+  host: vote-v2.voting-app.svc.cluster.local
+  subsets:
+  - name: v2
+    labels:
+      version: v2

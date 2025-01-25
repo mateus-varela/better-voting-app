@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mvarela-domain-cert
+  namespace: istio-system
+spec:
+  secretName: mvarela-domain-cert-tls
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - "*.mvarela.io"
+  issuerRef:
+    name: letsencrypt-dns01-issuer
+    kind: ClusterIssuer

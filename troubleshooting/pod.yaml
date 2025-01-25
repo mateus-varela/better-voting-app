@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: voting-app
+  name: ubuntu
+  labels:
+    app: ubuntu
+spec:
+  containers:
+  - image: us-central1-docker.pkg.dev/awesome-carver-428900-q8/artifact-laboratorio/k8stroubleshooting
+    command:
+      - "sleep"
+      - "604800"
+    imagePullPolicy: Always
+    name: ubuntu
+  restartPolicy: Always

@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vote
+    version: v2
+  name: vote-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vote
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: vote
+        version: v2
+      annotations:
+        instrumentation.my-opentelemetry.io/inject-python: "true"
+    spec:
+      containers:
+        - image: us-central1-docker.pkg.dev/awesome-carver-428900-q8/artifact-laboratorio/ms-vote:latest
+          name: vote
+          ports:
+            - containerPort: 80
+              name: vote
+          env:
+            - name: VERSION
+              value: "V2"
+            - name: KAFKA_BROKERS_LIST
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: kafka-brokers-list
+            - name: KAFKA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: kafka-username
+            - name: KAFKA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: kafka-password
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://my-opentelemetry-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=voting-service"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://my-opentelemetry-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: "http://my-opentelemetry-collector.monitoring.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+              value: "http://my-opentelemetry-collector.monitoring.svc.cluster.local:4317"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          imagePullPolicy: Always
+      imagePullSecrets:
+        - name: registry-secret 
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1

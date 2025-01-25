@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: result
+  name: result
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: result
+  template:
+    metadata:
+      labels:
+        app: result
+    spec:
+      containers:
+        - name: result
+          image: us-central1-docker.pkg.dev/awesome-carver-428900-q8/artifact-laboratorio/ms-result:latest 
+          ports:
+            - name: result
+              containerPort: 80
+              protocol: TCP
+          imagePullPolicy: Always  
+      imagePullSecrets:
+        - name: registry-secret  
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1  
+      maxUnavailable: 1  

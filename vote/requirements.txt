@@ -1,0 +1,10 @@
+Flask
+gunicorn
+kafka-python
+prometheus-client
+jaeger-client
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-flask
+opentelemetry-exporter-jaeger
+opentelemetry-exporter-otlp-proto-http

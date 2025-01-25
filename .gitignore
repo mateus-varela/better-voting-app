@@ -1,0 +1,7 @@
+*.pyc
+project.lock.json
+bin/
+obj/
+.vs/
+node_modules/
+awesome-carver-428900-q8-cbbf55cdd078.json
